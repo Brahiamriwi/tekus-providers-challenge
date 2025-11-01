@@ -1,0 +1,6 @@
+@TekusProviders.API_HostAddress = http://localhost:5130
+
+GET {{TekusProviders.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
