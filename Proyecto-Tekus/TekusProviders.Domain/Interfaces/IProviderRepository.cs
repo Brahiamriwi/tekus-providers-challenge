@@ -11,4 +11,5 @@ public interface IProviderRepository
     Task UpdateAsync(Provider provider);
     Task DeleteAsync(Guid id);
     Task<bool> ExistsByNitAsync(string nit);
+    Task AddCustomFieldAsync(Guid providerId, string fieldName, string fieldValue);
 }

@@ -90,8 +90,7 @@ public class ProviderService : IProviderService
             throw new KeyNotFoundException($"Provider with ID {providerId} not found");
         }
 
-        provider.AddCustomField(dto.FieldName, dto.FieldValue);
-        await _providerRepository.UpdateAsync(provider);
+        await _providerRepository.AddCustomFieldAsync(providerId, dto.FieldName, dto.FieldValue);
     }
 
     public async Task AssignServiceAsync(Guid providerId, Guid serviceId, List<string> countryCodes)
@@ -102,7 +101,7 @@ public class ProviderService : IProviderService
             throw new KeyNotFoundException($"Provider with ID {providerId} not found");
         }
 
-        var providerService = new ProviderService(providerId, serviceId);
+        var providerService = new Domain.Entities.ProviderService(providerId, serviceId);
         await _providerServiceRepository.AddAsync(providerService);
 
         // Agregar países al servicio

@@ -90,4 +90,11 @@ public class ProviderRepository : IProviderRepository
     {
         return await _context.Providers.AnyAsync(p => p.Nit == nit);
     }
+    
+    public async Task AddCustomFieldAsync(Guid providerId, string fieldName, string fieldValue)
+    {
+        var customField = new CustomField(providerId, fieldName, fieldValue);
+        await _context.CustomFields.AddAsync(customField);
+        await _context.SaveChangesAsync();
+    }
 }
