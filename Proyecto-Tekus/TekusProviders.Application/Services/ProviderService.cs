@@ -93,45 +93,70 @@ public class ProviderService : IProviderService
         await _providerRepository.AddCustomFieldAsync(providerId, dto.FieldName, dto.FieldValue);
     }
 
-    public async Task AssignServiceAsync(Guid providerId, Guid serviceId, List<string> countryCodes)
+public async Task AssignServiceAsync(Guid providerId, Guid serviceId, List<string> countryCodes)
+{
+    var provider = await _providerRepository.GetByIdAsync(providerId);
+    if (provider == null)
     {
-        var provider = await _providerRepository.GetByIdAsync(providerId);
-        if (provider == null)
-        {
-            throw new KeyNotFoundException($"Provider with ID {providerId} not found");
-        }
+        throw new KeyNotFoundException($"Provider with ID {providerId} not found");
+    }
 
-        var providerService = new Domain.Entities.ProviderService(providerId, serviceId);
-        await _providerServiceRepository.AddAsync(providerService);
+    // Intentar crear la relación (si ya existe, no hace nada)
+    var providerService = new Domain.Entities.ProviderService(providerId, serviceId);
+    await _providerServiceRepository.AddAsync(providerService);
 
-        // Agregar países al servicio
-        foreach (var countryCode in countryCodes)
+    // Obtener países ya asignados
+    var existingCountries = await _providerServiceRepository
+        .GetCountriesByProviderServiceAsync(providerId, serviceId);
+    var existingCountryCodes = existingCountries.Select(sc => sc.CountryCode).ToHashSet();
+
+    // Agregar solo los países nuevos
+    foreach (var countryCode in countryCodes)
+    {
+        // Evitar duplicados
+        if (!existingCountryCodes.Contains(countryCode))
         {
             var country = await _countryService.GetCountryByCodeAsync(countryCode);
             if (country != null)
             {
-                var serviceCountry = new ServiceCountry(providerId, serviceId, country.Code, country.Name);
+                var serviceCountry = new Domain.Entities.ServiceCountry(
+                    providerId, 
+                    serviceId, 
+                    country.Code, 
+                    country.Name
+                );
                 await _providerServiceRepository.AddCountryToServiceAsync(serviceCountry);
             }
         }
     }
-
-    // Mapeo a DTO
+}
     private static ProviderDto MapToDto(Provider provider)
     {
-        return new ProviderDto
+    return new ProviderDto
+    {
+        Id = provider.Id,
+        Nit = provider.Nit,
+        Name = provider.Name,
+        Email = provider.Email,
+        CreatedAt = provider.CreatedAt,
+        CustomFields = provider.CustomFields.Select(cf => new CustomFieldDto
         {
-            Id = provider.Id,
-            Nit = provider.Nit,
-            Name = provider.Name,
-            Email = provider.Email,
-            CreatedAt = provider.CreatedAt,
-            CustomFields = provider.CustomFields.Select(cf => new CustomFieldDto
+            Id = cf.Id,
+            FieldName = cf.FieldName,
+            FieldValue = cf.FieldValue
+        }).ToList(),
+        // Agregar los servicios asignados
+        Services = provider.ProviderServices.Select(ps => new ServiceDto
+        {
+            Id = ps.Service.Id,
+            Name = ps.Service.Name,
+            HourlyRateUsd = ps.Service.HourlyRateUsd,
+            Countries = ps.ServiceCountries.Select(sc => new CountryDto
             {
-                Id = cf.Id,
-                FieldName = cf.FieldName,
-                FieldValue = cf.FieldValue
+                Code = sc.CountryCode,
+                Name = sc.CountryName
             }).ToList()
-        };
-    }
+        }).ToList()
+    };
+}
 }

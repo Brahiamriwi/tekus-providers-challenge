@@ -34,8 +34,17 @@ public class ProviderServiceRepository : IProviderServiceRepository
 
     public async Task AddAsync(ProviderService providerService)
     {
-        await _context.ProviderServices.AddAsync(providerService);
-        await _context.SaveChangesAsync();
+        // Verificar si ya existe
+        var exists = await _context.ProviderServices
+            .AnyAsync(ps => ps.ProviderId == providerService.ProviderId && 
+                            ps.ServiceId == providerService.ServiceId);
+    
+        if (!exists)
+        {
+            await _context.ProviderServices.AddAsync(providerService);
+            await _context.SaveChangesAsync();
+        }
+        // Si ya existe, simplemente no hacemos nada (los países se agregan en otro método)
     }
 
     public async Task AddCountryToServiceAsync(ServiceCountry serviceCountry)

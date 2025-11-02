@@ -30,7 +30,9 @@ public class ProviderRepository : IProviderRepository
         var query = _context.Providers
             .Include(p => p.CustomFields)
             .Include(p => p.ProviderServices)
-                .ThenInclude(ps => ps.Service)
+            .ThenInclude(ps => ps.Service)
+            .Include(p => p.ProviderServices)
+            .ThenInclude(ps => ps.ServiceCountries)  // ← AGREGAR ESTA LÍNEA
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
