@@ -5,19 +5,29 @@ import Navbar from '../components/Navbar';
 
 export default function Providers() {
     const [providers, setProviders] = useState([]);
+    const [services, setServices] = useState([]);
+    const [countries, setCountries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showCustomFieldModal, setShowCustomFieldModal] = useState(false);
+    const [showAssignServiceModal, setShowAssignServiceModal] = useState(false);
+    const [selectedProvider, setSelectedProvider] = useState(null);
 
-    // Form state
-    const [formData, setFormData] = useState({
-        nit: '',
-        name: '',
-        email: '',
+    // Form states
+    const [formData, setFormData] = useState({ nit: '', name: '', email: '' });
+    const [editData, setEditData] = useState({ name: '', email: '' });
+    const [customFieldData, setCustomFieldData] = useState({ fieldName: '', fieldValue: '' });
+    const [assignServiceData, setAssignServiceData] = useState({
+        serviceId: '',
+        countryCodes: [],
     });
 
     useEffect(() => {
         fetchProviders();
+        fetchServices();
+        fetchCountries();
     }, []);
 
     const fetchProviders = async () => {
@@ -32,6 +42,27 @@ export default function Providers() {
             toast.error('Failed to load providers');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchServices = async () => {
+        try {
+            const response = await api.get('/Services', {
+                params: { pageNumber: 1, pageSize: 50 }
+            });
+            setServices(response.data.items || []);
+        } catch (error) {
+            console.error('Error fetching services:', error);
+        }
+    };
+
+    const fetchCountries = async () => {
+        try {
+            const response = await api.get('/Countries');
+            setCountries(response.data || []);
+        } catch (error) {
+            console.error('Error fetching countries:', error);
+            toast.error('Failed to load countries');
         }
     };
 
@@ -55,6 +86,76 @@ export default function Providers() {
         }
     };
 
+    const handleEdit = async (e) => {
+        e.preventDefault();
+
+        if (!editData.name || !editData.email) {
+            toast.error('Please fill in all fields');
+            return;
+        }
+
+        try {
+            await api.put(`/Providers/${selectedProvider.id}`, editData);
+            toast.success('Provider updated successfully! ✅');
+            setShowEditModal(false);
+            setSelectedProvider(null);
+            fetchProviders();
+        } catch (error) {
+            console.error('Error updating provider:', error);
+            toast.error(error.response?.data || 'Failed to update provider');
+        }
+    };
+
+    const handleAddCustomField = async (e) => {
+        e.preventDefault();
+
+        if (!customFieldData.fieldName || !customFieldData.fieldValue) {
+            toast.error('Please fill in all fields');
+            return;
+        }
+
+        try {
+            await api.post(`/Providers/${selectedProvider.id}/custom-fields`, customFieldData);
+            toast.success('Custom field added successfully! 🏷️');
+            setShowCustomFieldModal(false);
+            setCustomFieldData({ fieldName: '', fieldValue: '' });
+            setSelectedProvider(null);
+            fetchProviders();
+        } catch (error) {
+            console.error('Error adding custom field:', error);
+            toast.error(error.response?.data || 'Failed to add custom field');
+        }
+    };
+
+    const handleAssignService = async (e) => {
+        e.preventDefault();
+
+        if (!assignServiceData.serviceId) {
+            toast.error('Please select a service');
+            return;
+        }
+
+        if (assignServiceData.countryCodes.length === 0) {
+            toast.error('Please select at least one country');
+            return;
+        }
+
+        try {
+            await api.post(
+                `/Providers/${selectedProvider.id}/services/${assignServiceData.serviceId}`,
+                assignServiceData.countryCodes
+            );
+            toast.success('Service assigned successfully! 🌍');
+            setShowAssignServiceModal(false);
+            setAssignServiceData({ serviceId: '', countryCodes: [] });
+            setSelectedProvider(null);
+            fetchProviders();
+        } catch (error) {
+            console.error('Error assigning service:', error);
+            toast.error(error.response?.data || 'Failed to assign service');
+        }
+    };
+
     const handleDelete = async (id, name) => {
         if (!window.confirm(`Are you sure you want to delete "${name}"?`)) {
             return;
@@ -68,6 +169,31 @@ export default function Providers() {
             console.error('Error deleting provider:', error);
             toast.error('Failed to delete provider');
         }
+    };
+
+    const openEditModal = (provider) => {
+        setSelectedProvider(provider);
+        setEditData({ name: provider.name, email: provider.email });
+        setShowEditModal(true);
+    };
+
+    const openCustomFieldModal = (provider) => {
+        setSelectedProvider(provider);
+        setShowCustomFieldModal(true);
+    };
+
+    const openAssignServiceModal = (provider) => {
+        setSelectedProvider(provider);
+        setShowAssignServiceModal(true);
+    };
+
+    const toggleCountry = (countryCode) => {
+        setAssignServiceData(prev => ({
+            ...prev,
+            countryCodes: prev.countryCodes.includes(countryCode)
+                ? prev.countryCodes.filter(c => c !== countryCode)
+                : [...prev.countryCodes, countryCode]
+        }));
     };
 
     const filteredProviders = providers.filter(p =>
@@ -125,20 +251,34 @@ export default function Providers() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
                                     </div>
-                                    <button
-                                        onClick={() => handleDelete(provider.id, provider.name)}
-                                        className="text-red-500 hover:text-red-700 transition"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={() => openEditModal(provider)}
+                                            className="text-blue-500 hover:text-blue-700 transition"
+                                            title="Edit"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(provider.id, provider.name)}
+                                            className="text-red-500 hover:text-red-700 transition"
+                                            title="Delete"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                                 <h3 className="text-lg font-bold text-gray-800 mb-2">{provider.name}</h3>
-                                <div className="space-y-2 text-sm text-gray-600">
+                                <div className="space-y-2 text-sm text-gray-600 mb-4">
                                     <p><span className="font-semibold">NIT:</span> {provider.nit}</p>
                                     <p><span className="font-semibold">Email:</span> {provider.email}</p>
                                 </div>
+
+                                {/* Custom Fields */}
                                 {provider.customFields && provider.customFields.length > 0 && (
                                     <div className="mt-4 pt-4 border-t">
                                         <p className="text-xs font-semibold text-gray-700 mb-2">Custom Fields:</p>
@@ -149,6 +289,41 @@ export default function Providers() {
                                         ))}
                                     </div>
                                 )}
+
+                                {/* Services Assigned */}
+                                {provider.services && provider.services.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t">
+                                        <p className="text-xs font-semibold text-gray-700 mb-2">Assigned Services:</p>
+                                        {provider.services.map((service, idx) => (
+                                            <div key={idx} className="text-xs text-gray-600 mb-2 bg-green-50 p-2 rounded">
+                                                <p className="font-semibold text-green-800">{service.name}</p>
+                                                {service.countries && service.countries.length > 0 ? (
+                                                    <p className="text-gray-600">
+                                                        📍 {service.countries.map(c => c.name).join(', ')}
+                                                    </p>
+                                                ) : (
+                                                    <p className="text-gray-500 italic">No countries assigned</p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="space-y-2 mt-4">
+                                    <button
+                                        onClick={() => openCustomFieldModal(provider)}
+                                        className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm"
+                                    >
+                                        + Add Custom Field
+                                    </button>
+                                    <button
+                                        onClick={() => openAssignServiceModal(provider)}
+                                        className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition text-sm"
+                                    >
+                                        🌍 Assign Service
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -214,6 +389,180 @@ export default function Providers() {
                                     className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition"
                                 >
                                     Create
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {showEditModal && selectedProvider && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-8">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6">Edit Provider</h2>
+                        <form onSubmit={handleEdit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                                <input
+                                    type="text"
+                                    value={editData.name}
+                                    onChange={(e) => setEditData({...editData, name: e.target.value})}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                <input
+                                    type="email"
+                                    value={editData.email}
+                                    onChange={(e) => setEditData({...editData, email: e.target.value})}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div className="flex space-x-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowEditModal(false); setSelectedProvider(null); }}
+                                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition"
+                                >
+                                    Update
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Field Modal */}
+            {showCustomFieldModal && selectedProvider && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-8">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Add Custom Field</h2>
+                        <p className="text-gray-600 mb-6">For: {selectedProvider.name}</p>
+                        <form onSubmit={handleAddCustomField} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Field Name</label>
+                                <input
+                                    type="text"
+                                    value={customFieldData.fieldName}
+                                    onChange={(e) => setCustomFieldData({...customFieldData, fieldName: e.target.value})}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Phone Number"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Field Value</label>
+                                <input
+                                    type="text"
+                                    value={customFieldData.fieldValue}
+                                    onChange={(e) => setCustomFieldData({...customFieldData, fieldValue: e.target.value})}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="+57 300 123 4567"
+                                />
+                            </div>
+                            <div className="flex space-x-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowCustomFieldModal(false);
+                                        setSelectedProvider(null);
+                                        setCustomFieldData({ fieldName: '', fieldValue: '' });
+                                    }}
+                                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition"
+                                >
+                                    Add Field
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Assign Service Modal */}
+            {showAssignServiceModal && selectedProvider && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+                    <div className="bg-white rounded-2xl max-w-2xl w-full p-8 my-8">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Assign Service</h2>
+                        <p className="text-gray-600 mb-6">For: {selectedProvider.name}</p>
+                        <form onSubmit={handleAssignService} className="space-y-6">
+                            {/* Select Service */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Select Service</label>
+                                <select
+                                    value={assignServiceData.serviceId}
+                                    onChange={(e) => setAssignServiceData({...assignServiceData, serviceId: e.target.value})}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                >
+                                    <option value="">-- Select a service --</option>
+                                    {services.map(service => (
+                                        <option key={service.id} value={service.id}>
+                                            {service.name} (${service.hourlyRateUsd}/hr)
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Select Countries */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-3">
+                                    Select Countries ({assignServiceData.countryCodes.length} selected)
+                                </label>
+                                <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-lg p-4 grid grid-cols-2 gap-2">
+                                    {countries.slice(0, 50).map((country) => (
+                                        <label
+                                            key={country.code || country.Code}
+                                            className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={assignServiceData.countryCodes.includes(country.code || country.Code)}
+                                                onChange={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleCountry(country.code || country.Code);
+                                                }}
+                                                className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                                            />
+                                            <span className="text-sm text-gray-700">
+                  {country.name || country.Name || 'Unknown'}
+                </span>
+                                        </label>
+                                    ))}
+                                </div>
+                                {countries.length === 0 && (
+                                    <p className="text-gray-500 text-sm mt-2">Loading countries...</p>
+                                )}
+                            </div>
+
+                            <div className="flex space-x-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowAssignServiceModal(false);
+                                        setSelectedProvider(null);
+                                        setAssignServiceData({ serviceId: '', countryCodes: [] });
+                                    }}
+                                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition"
+                                >
+                                    Assign Service
                                 </button>
                             </div>
                         </form>

@@ -8,9 +8,17 @@ export default function Services() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedService, setSelectedService] = useState(null);
 
-    // Form state
+    // Form state para crear
     const [formData, setFormData] = useState({
+        name: '',
+        hourlyRateUsd: '',
+    });
+
+    // Form state para editar
+    const [editData, setEditData] = useState({
         name: '',
         hourlyRateUsd: '',
     });
@@ -62,6 +70,34 @@ export default function Services() {
         }
     };
 
+    const handleEdit = async (e) => {
+        e.preventDefault();
+
+        if (!editData.name || !editData.hourlyRateUsd) {
+            toast.error('Please fill in all fields');
+            return;
+        }
+
+        if (parseFloat(editData.hourlyRateUsd) < 0) {
+            toast.error('Hourly rate must be a positive number');
+            return;
+        }
+
+        try {
+            await api.put(`/Services/${selectedService.id}`, {
+                name: editData.name,
+                hourlyRateUsd: parseFloat(editData.hourlyRateUsd),
+            });
+            toast.success('Service updated successfully! ✅');
+            setShowEditModal(false);
+            setSelectedService(null);
+            fetchServices();
+        } catch (error) {
+            console.error('Error updating service:', error);
+            toast.error(error.response?.data || 'Failed to update service');
+        }
+    };
+
     const handleDelete = async (id, name) => {
         if (!window.confirm(`Are you sure you want to delete "${name}"?`)) {
             return;
@@ -75,6 +111,15 @@ export default function Services() {
             console.error('Error deleting service:', error);
             toast.error('Failed to delete service');
         }
+    };
+
+    const openEditModal = (service) => {
+        setSelectedService(service);
+        setEditData({
+            name: service.name,
+            hourlyRateUsd: service.hourlyRateUsd.toString(),
+        });
+        setShowEditModal(true);
     };
 
     const filteredServices = services.filter(s =>
@@ -130,14 +175,26 @@ export default function Services() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                         </svg>
                                     </div>
-                                    <button
-                                        onClick={() => handleDelete(service.id, service.name)}
-                                        className="text-red-500 hover:text-red-700 transition"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={() => openEditModal(service)}
+                                            className="text-purple-500 hover:text-purple-700 transition"
+                                            title="Edit"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(service.id, service.name)}
+                                            className="text-red-500 hover:text-red-700 transition"
+                                            title="Delete"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                                 <h3 className="text-lg font-bold text-gray-800 mb-3">{service.name}</h3>
                                 <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg p-4">
@@ -213,6 +270,55 @@ export default function Services() {
                                     className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition"
                                 >
                                     Create
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {showEditModal && selectedService && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-8">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6">Edit Service</h2>
+                        <form onSubmit={handleEdit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Service Name</label>
+                                <input
+                                    type="text"
+                                    value={editData.name}
+                                    onChange={(e) => setEditData({...editData, name: e.target.value})}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Hourly Rate (USD)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={editData.hourlyRateUsd}
+                                    onChange={(e) => setEditData({...editData, hourlyRateUsd: e.target.value})}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div className="flex space-x-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowEditModal(false);
+                                        setSelectedService(null);
+                                    }}
+                                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition"
+                                >
+                                    Update
                                 </button>
                             </div>
                         </form>
