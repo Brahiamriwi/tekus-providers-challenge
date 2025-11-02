@@ -15,9 +15,20 @@ export default function Providers() {
     const [showAssignServiceModal, setShowAssignServiceModal] = useState(false);
     const [selectedProvider, setSelectedProvider] = useState(null);
 
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(9); // 9 para grid de 3x3
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+
     // Form states
     const [formData, setFormData] = useState({ nit: '', name: '', email: '' });
-    const [editData, setEditData] = useState({ name: '', email: '' });
+    const [editData, setEditData] = useState({
+        name: '',
+        email: '',
+        customFields: [],
+        services: []
+    });
     const [customFieldData, setCustomFieldData] = useState({ fieldName: '', fieldValue: '' });
     const [assignServiceData, setAssignServiceData] = useState({
         serviceId: '',
@@ -28,14 +39,22 @@ export default function Providers() {
         fetchProviders();
         fetchServices();
         fetchCountries();
-    }, []);
+    }, [currentPage, pageSize]);
 
     const fetchProviders = async () => {
         try {
+            setLoading(true);
             const response = await api.get('/Providers', {
-                params: { pageNumber: 1, pageSize: 50 }
+                params: {
+                    pageNumber: currentPage,
+                    pageSize: pageSize
+                }
             });
+
             setProviders(response.data.items || []);
+            setTotalItems(response.data.totalCount || 0);
+            setTotalPages(response.data.totalPages || Math.ceil((response.data.totalCount || 0) / pageSize));
+
             toast.success(`Loaded ${response.data.items?.length || 0} providers`);
         } catch (error) {
             console.error('Error fetching providers:', error);
@@ -48,7 +67,7 @@ export default function Providers() {
     const fetchServices = async () => {
         try {
             const response = await api.get('/Services', {
-                params: { pageNumber: 1, pageSize: 50 }
+                params: { pageNumber: 1, pageSize: 100 } // Traer más servicios
             });
             setServices(response.data.items || []);
         } catch (error) {
@@ -95,7 +114,12 @@ export default function Providers() {
         }
 
         try {
-            await api.put(`/Providers/${selectedProvider.id}`, editData);
+            // Actualizar información básica del proveedor (solo name y email)
+            await api.put(`/Providers/${selectedProvider.id}`, {
+                name: editData.name,
+                email: editData.email
+            });
+
             toast.success('Provider updated successfully! ✅');
             setShowEditModal(false);
             setSelectedProvider(null);
@@ -126,6 +150,9 @@ export default function Providers() {
             toast.error(error.response?.data || 'Failed to add custom field');
         }
     };
+
+    // Nota: No hay endpoints para eliminar custom fields o servicios individualmente
+    // Solo se pueden agregar nuevos
 
     const handleAssignService = async (e) => {
         e.preventDefault();
@@ -164,7 +191,13 @@ export default function Providers() {
         try {
             await api.delete(`/Providers/${id}`);
             toast.success('Provider deleted successfully!');
-            fetchProviders();
+
+            // Si al eliminar queda la página vacía y no es la primera, retroceder
+            if (providers.length === 1 && currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+            } else {
+                fetchProviders();
+            }
         } catch (error) {
             console.error('Error deleting provider:', error);
             toast.error('Failed to delete provider');
@@ -173,7 +206,12 @@ export default function Providers() {
 
     const openEditModal = (provider) => {
         setSelectedProvider(provider);
-        setEditData({ name: provider.name, email: provider.email });
+        setEditData({
+            name: provider.name,
+            email: provider.email,
+            customFields: provider.customFields || [],
+            services: provider.services || []
+        });
         setShowEditModal(true);
     };
 
@@ -194,6 +232,37 @@ export default function Providers() {
                 ? prev.countryCodes.filter(c => c !== countryCode)
                 : [...prev.countryCodes, countryCode]
         }));
+    };
+
+    // Paginación
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
+    const handlePageSizeChange = (size) => {
+        setPageSize(Number(size));
+        setCurrentPage(1); // Reset a primera página al cambiar tamaño
+    };
+
+    // Generar array de páginas para mostrar
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxPagesToShow = 5;
+
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        if (endPage - startPage < maxPagesToShow - 1) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+
+        return pages;
     };
 
     const filteredProviders = providers.filter(p =>
@@ -221,16 +290,33 @@ export default function Providers() {
                     </button>
                 </div>
 
-                {/* Search */}
-                <div className="mb-6">
+                {/* Search and Controls */}
+                <div className="mb-6 flex flex-col sm:flex-row gap-4">
                     <input
                         type="text"
                         placeholder="Search by name, NIT or email..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
+                    <select
+                        value={pageSize}
+                        onChange={(e) => handlePageSizeChange(e.target.value)}
+                        className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="6">6 per page</option>
+                        <option value="9">9 per page</option>
+                        <option value="12">12 per page</option>
+                        <option value="24">24 per page</option>
+                    </select>
                 </div>
+
+                {/* Info Bar */}
+                {!loading && (
+                    <div className="mb-4 text-sm text-gray-600">
+                        Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems} providers
+                    </div>
+                )}
 
                 {/* Loading */}
                 {loading && (
@@ -338,6 +424,84 @@ export default function Providers() {
                         <p className="text-gray-600">No providers found</p>
                     </div>
                 )}
+
+                {/* Pagination Controls */}
+                {!loading && totalPages > 1 && (
+                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <div className="flex items-center gap-2">
+                            {/* Previous Button */}
+                            <button
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className={`px-3 py-2 rounded-lg ${
+                                    currentPage === 1
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-white text-gray-700 hover:bg-gray-100 border'
+                                }`}
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+
+                            {/* First Page */}
+                            {currentPage > 3 && (
+                                <>
+                                    <button
+                                        onClick={() => handlePageChange(1)}
+                                        className="px-4 py-2 rounded-lg bg-white text-gray-700 hover:bg-gray-100 border"
+                                    >
+                                        1
+                                    </button>
+                                    {currentPage > 4 && <span className="px-2 text-gray-500">...</span>}
+                                </>
+                            )}
+
+                            {/* Page Numbers */}
+                            {getPageNumbers().map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => handlePageChange(page)}
+                                    className={`px-4 py-2 rounded-lg ${
+                                        page === currentPage
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-white text-gray-700 hover:bg-gray-100 border'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            {/* Last Page */}
+                            {currentPage < totalPages - 2 && (
+                                <>
+                                    {currentPage < totalPages - 3 && <span className="px-2 text-gray-500">...</span>}
+                                    <button
+                                        onClick={() => handlePageChange(totalPages)}
+                                        className="px-4 py-2 rounded-lg bg-white text-gray-700 hover:bg-gray-100 border"
+                                    >
+                                        {totalPages}
+                                    </button>
+                                </>
+                            )}
+
+                            {/* Next Button */}
+                            <button
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className={`px-3 py-2 rounded-lg ${
+                                    currentPage === totalPages
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-white text-gray-700 hover:bg-gray-100 border'
+                                }`}
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Create Modal */}
@@ -396,12 +560,25 @@ export default function Providers() {
                 </div>
             )}
 
-            {/* Edit Modal */}
+            {/* Enhanced Edit Modal - Solo edita name y email */}
             {showEditModal && selectedProvider && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-8">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+                    <div className="bg-white rounded-2xl max-w-2xl w-full p-8 my-8 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-2xl font-bold text-gray-800 mb-6">Edit Provider</h2>
+
+                        {/* NIT (No editable) */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">NIT (Not editable)</label>
+                            <input
+                                type="text"
+                                value={selectedProvider.nit}
+                                disabled
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500"
+                            />
+                        </div>
+
                         <form onSubmit={handleEdit} className="space-y-4">
+                            {/* Basic Info */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
                                 <input
@@ -420,7 +597,48 @@ export default function Providers() {
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
-                            <div className="flex space-x-3 pt-4">
+
+                            {/* Custom Fields Section - Solo lectura */}
+                            {editData.customFields && editData.customFields.length > 0 && (
+                                <div className="border-t pt-4">
+                                    <h3 className="text-lg font-semibold text-gray-700 mb-3">Custom Fields (Read Only)</h3>
+                                    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                                        {editData.customFields.map((field, index) => (
+                                            <div key={index} className="text-sm">
+                                                <span className="font-semibold text-gray-700">{field.fieldName}:</span>{' '}
+                                                <span className="text-gray-600">{field.fieldValue}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2 italic">
+                                        To add more custom fields, use the "Add Custom Field" button in the provider card.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Services Section - Solo lectura */}
+                            {editData.services && editData.services.length > 0 && (
+                                <div className="border-t pt-4">
+                                    <h3 className="text-lg font-semibold text-gray-700 mb-3">Assigned Services (Read Only)</h3>
+                                    <div className="space-y-2">
+                                        {editData.services.map((service, index) => (
+                                            <div key={index} className="bg-green-50 p-3 rounded-lg">
+                                                <p className="font-semibold text-green-800">{service.name}</p>
+                                                {service.countries && service.countries.length > 0 && (
+                                                    <p className="text-sm text-gray-600">
+                                                        📍 {service.countries.map(c => c.name).join(', ')}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2 italic">
+                                        To assign more services, use the "Assign Service" button in the provider card.
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="flex space-x-3 pt-6">
                                 <button
                                     type="button"
                                     onClick={() => { setShowEditModal(false); setSelectedProvider(null); }}
@@ -536,8 +754,8 @@ export default function Providers() {
                                                 className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
                                             />
                                             <span className="text-sm text-gray-700">
-                  {country.name || country.Name || 'Unknown'}
-                </span>
+                                                {country.name || country.Name || 'Unknown'}
+                                            </span>
                                         </label>
                                     ))}
                                 </div>

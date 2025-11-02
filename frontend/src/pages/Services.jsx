@@ -11,6 +11,12 @@ export default function Services() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedService, setSelectedService] = useState(null);
 
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(9); // 9 para grid de 3x3
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+
     // Form state para crear
     const [formData, setFormData] = useState({
         name: '',
@@ -25,14 +31,22 @@ export default function Services() {
 
     useEffect(() => {
         fetchServices();
-    }, []);
+    }, [currentPage, pageSize]);
 
     const fetchServices = async () => {
         try {
+            setLoading(true);
             const response = await api.get('/Services', {
-                params: { pageNumber: 1, pageSize: 50 }
+                params: {
+                    pageNumber: currentPage,
+                    pageSize: pageSize
+                }
             });
+
             setServices(response.data.items || []);
+            setTotalItems(response.data.totalCount || 0);
+            setTotalPages(response.data.totalPages || Math.ceil((response.data.totalCount || 0) / pageSize));
+
             toast.success(`Loaded ${response.data.items?.length || 0} services`);
         } catch (error) {
             console.error('Error fetching services:', error);
@@ -106,7 +120,13 @@ export default function Services() {
         try {
             await api.delete(`/Services/${id}`);
             toast.success('Service deleted successfully!');
-            fetchServices();
+
+            // Si al eliminar queda la página vacía y no es la primera, retroceder
+            if (services.length === 1 && currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+            } else {
+                fetchServices();
+            }
         } catch (error) {
             console.error('Error deleting service:', error);
             toast.error('Failed to delete service');
@@ -120,6 +140,37 @@ export default function Services() {
             hourlyRateUsd: service.hourlyRateUsd.toString(),
         });
         setShowEditModal(true);
+    };
+
+    // Paginación
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
+    const handlePageSizeChange = (size) => {
+        setPageSize(Number(size));
+        setCurrentPage(1); // Reset a primera página al cambiar tamaño
+    };
+
+    // Generar array de páginas para mostrar
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxPagesToShow = 5;
+
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        if (endPage - startPage < maxPagesToShow - 1) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+
+        return pages;
     };
 
     const filteredServices = services.filter(s =>
@@ -145,16 +196,33 @@ export default function Services() {
                     </button>
                 </div>
 
-                {/* Search */}
-                <div className="mb-6">
+                {/* Search and Controls */}
+                <div className="mb-6 flex flex-col sm:flex-row gap-4">
                     <input
                         type="text"
                         placeholder="Search services by name..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
+                    <select
+                        value={pageSize}
+                        onChange={(e) => handlePageSizeChange(e.target.value)}
+                        className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    >
+                        <option value="6">6 per page</option>
+                        <option value="9">9 per page</option>
+                        <option value="12">12 per page</option>
+                        <option value="24">24 per page</option>
+                    </select>
                 </div>
+
+                {/* Info Bar */}
+                {!loading && (
+                    <div className="mb-4 text-sm text-gray-600">
+                        Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems} services
+                    </div>
+                )}
 
                 {/* Loading */}
                 {loading && (
@@ -207,8 +275,8 @@ export default function Services() {
                                         <div className="flex flex-wrap gap-1">
                                             {service.countries.map((country, idx) => (
                                                 <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded">
-                          {country.name}
-                        </span>
+                                                    {country.name}
+                                                </span>
                                             ))}
                                         </div>
                                     </div>
@@ -225,6 +293,84 @@ export default function Services() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                         </svg>
                         <p className="text-gray-600">No services found</p>
+                    </div>
+                )}
+
+                {/* Pagination Controls */}
+                {!loading && totalPages > 1 && (
+                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <div className="flex items-center gap-2">
+                            {/* Previous Button */}
+                            <button
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className={`px-3 py-2 rounded-lg ${
+                                    currentPage === 1
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-white text-gray-700 hover:bg-gray-100 border'
+                                }`}
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+
+                            {/* First Page */}
+                            {currentPage > 3 && (
+                                <>
+                                    <button
+                                        onClick={() => handlePageChange(1)}
+                                        className="px-4 py-2 rounded-lg bg-white text-gray-700 hover:bg-gray-100 border"
+                                    >
+                                        1
+                                    </button>
+                                    {currentPage > 4 && <span className="px-2 text-gray-500">...</span>}
+                                </>
+                            )}
+
+                            {/* Page Numbers */}
+                            {getPageNumbers().map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => handlePageChange(page)}
+                                    className={`px-4 py-2 rounded-lg ${
+                                        page === currentPage
+                                            ? 'bg-purple-500 text-white'
+                                            : 'bg-white text-gray-700 hover:bg-gray-100 border'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            {/* Last Page */}
+                            {currentPage < totalPages - 2 && (
+                                <>
+                                    {currentPage < totalPages - 3 && <span className="px-2 text-gray-500">...</span>}
+                                    <button
+                                        onClick={() => handlePageChange(totalPages)}
+                                        className="px-4 py-2 rounded-lg bg-white text-gray-700 hover:bg-gray-100 border"
+                                    >
+                                        {totalPages}
+                                    </button>
+                                </>
+                            )}
+
+                            {/* Next Button */}
+                            <button
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className={`px-3 py-2 rounded-lg ${
+                                    currentPage === totalPages
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-white text-gray-700 hover:bg-gray-100 border'
+                                }`}
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
