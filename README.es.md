@@ -78,6 +78,64 @@ El proyecto sigue Domain-Driven Design con separación en capas:
 - [SQL Server 2022](https://www.microsoft.com/sql-server/sql-server-downloads) o Docker
 - [Git](https://git-scm.com/)
 
+## 🎯 Inicio Rápido para Revisores
+
+Para evaluar rápidamente este proyecto, sigue estos pasos simplificados:
+
+### Credenciales de Prueba
+
+**SQL Server (contenedor Docker):**
+- Server: `localhost,1433`
+- User: `sa`
+- Password: `TekusTest2024!`
+- Database: `TekusProvidersDb`
+
+**Login de la Aplicación:**
+- Username: `admin`
+- Password: `Tekus2024!`
+
+> **Nota**: Estas son credenciales de prueba solo para desarrollo local. En ambientes de producción, usa credenciales seguras y variables de entorno.
+
+---
+
+## ⚡ Configuración en 3 Minutos
+
+Sigue estos pasos para ejecutar el proyecto:
+
+**1. Iniciar Base de Datos (30 segundos)**
+```bash
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=TekusTest2024!" -p 1433:1433 --name sqlserver-tekus -d mcr.microsoft.com/mssql/server:2022-latest
+```
+
+**2. Configurar Aplicación (1 minuto)**
+```bash
+# Copiar plantilla de configuración
+Copy-Item Proyecto-Tekus/TekusProviders.API/appsettings.Example.json Proyecto-Tekus/TekusProviders.API/appsettings.json
+
+# Editar appsettings.json y reemplazar:
+# - YOUR_PASSWORD_HERE → TekusTest2024!
+# - CHANGE_THIS_TO... → cualquier-clave-segura-con-32-caracteres-minimo
+```
+
+**3. Ejecutar Scripts de BD (1 minuto)**
+- Ejecutar `database/01_CreateDatabase.sql`
+- Ejecutar `database/02_SeedData.sql`
+
+**4. Iniciar Backend y Frontend (30 segundos)**
+```bash
+# Terminal 1: Backend
+dotnet run --project Proyecto-Tekus/TekusProviders.API/TekusProviders.API.csproj
+
+# Terminal 2: Frontend
+cd frontend && npm install && npm run dev
+```
+
+**5. Acceder:**
+- Frontend: http://localhost:5173 (login: admin / Tekus2024!)
+- Swagger: http://localhost:5130/swagger
+
+✅ **¡Listo! El proyecto está ejecutándose.**
+
 ## ⚙️ Instalación y Configuración
 
 ### 1. Clonar el repositorio
@@ -101,16 +159,35 @@ docker run -e "ACCEPT_EULA=Y" \
 
 Si ya tienes SQL Server instalado, ajusta la cadena de conexión en el paso 3.
 
+
 ### 3. Configurar cadena de conexión
 
-Edita `Proyecto-Tekus/TekusProviders.API/appsettings.json`:
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost,1433;Database=TekusProvidersDb;User Id=sa;Password=TU_CONTRASEÑA;TrustServerCertificate=True;"
-  }
-}
+**⚠️ IMPORTANTE**: El proyecto usa `appsettings.Example.json` como plantilla. Debes crear tu propio `appsettings.json`:
+
+**En Linux/Mac:**
+```bash
+cp Proyecto-Tekus/TekusProviders.API/appsettings.Example.json Proyecto-Tekus/TekusProviders.API/appsettings.json
 ```
+
+**En Windows PowerShell:**
+```powershell
+Copy-Item Proyecto-Tekus/TekusProviders.API/appsettings.Example.json Proyecto-Tekus/TekusProviders.API/appsettings.json
+```
+
+Edita `Proyecto-Tekus/TekusProviders.API/appsettings.json` y configura:
+
+1. **Conexión a Base de Datos**: Actualiza con tus credenciales de SQL Server
+    - Reemplaza `YOUR_PASSWORD_HERE` con `TekusTest2024!` (si usas Docker)
+    - O usa tus propias credenciales de SQL Server
+
+2. **Secreto JWT**: Cambia a una cadena aleatoria segura (mínimo 32 caracteres)
+    - Reemplaza el placeholder con tu propia clave secreta
+    - Para pruebas, puedes usar cualquier cadena con 32+ caracteres
+
+**🔒 Notas de Seguridad**:
+- `appsettings.json` está ignorado por Git y NUNCA debe ser commiteado
+- Nunca compartas tus contraseñas reales de producción en documentación
+- Usa credenciales diferentes para desarrollo y producción
 
 ### 4. Crear base de datos e insertar datos
 

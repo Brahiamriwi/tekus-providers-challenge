@@ -79,6 +79,67 @@ The project follows Domain-Driven Design with layer separation:
 - [SQL Server 2022](https://www.microsoft.com/sql-server/sql-server-downloads) or Docker
 - [Git](https://git-scm.com/)
 
+## 🎯 Quick Start for Reviewers
+
+To quickly evaluate this project, follow these simplified steps:
+
+### Test Credentials
+
+**SQL Server (Docker container):**
+- Server: `localhost,1433`
+- User: `sa`
+- Password: `TekusTest2024!`
+- Database: `TekusProvidersDb`
+
+**Application Login:**
+- Username: `admin`
+- Password: `Tekus2024!`
+
+> **Note**: These are test credentials for local development only. In production environments, use secure credentials and environment variables.
+
+---
+
+## ⚡ Setup in 3 Minutes
+
+Follow these steps to run the project:
+
+**1. Start Database (30 seconds)**
+```bash
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=TekusTest2024!" -p 1433:1433 --name sqlserver-tekus -d mcr.microsoft.com/mssql/server:2022-latest
+```
+
+**2. Configure Application (1 minute)**
+```bash
+# Copy configuration template
+cp Proyecto-Tekus/TekusProviders.API/appsettings.Example.json Proyecto-Tekus/TekusProviders.API/appsettings.json
+
+# Edit appsettings.json and replace:
+# - YOUR_PASSWORD_HERE → TekusTest2024!
+# - CHANGE_THIS_TO... → any-secure-key-with-32-chars-minimum
+```
+
+**3. Run Database Scripts (1 minute)**
+- Execute `database/01_CreateDatabase.sql`
+- Execute `database/02_SeedData.sql`
+
+**4. Start Backend & Frontend (30 seconds)**
+```bash
+# Terminal 1: Backend
+dotnet run --project Proyecto-Tekus/TekusProviders.API/TekusProviders.API.csproj
+
+# Terminal 2: Frontend
+cd frontend && npm install && npm run dev
+```
+
+**5. Access:**
+- Frontend: http://localhost:5173 (login: admin / Tekus2024!)
+- Swagger: http://localhost:5130/swagger
+
+✅ **Done! The project is running.**
+
+---
+
+
 ## ⚙️ Setup and Installation
 
 ### 1. Clone the repository
@@ -104,14 +165,32 @@ If you already have SQL Server installed, adjust the connection string in step 3
 
 ### 3. Configure connection string
 
-Edit `Proyecto-Tekus/TekusProviders.API/appsettings.json`:
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost,1433;Database=TekusProvidersDb;User Id=sa;Password=YOUR_PASSWORD;TrustServerCertificate=True;"
-  }
-}
+**⚠️ IMPORTANT**: The project uses `appsettings.Example.json` as a template. You must create your own `appsettings.json`:
+
+**On Linux/Mac:**
+```bash
+cp Proyecto-Tekus/TekusProviders.API/appsettings.Example.json Proyecto-Tekus/TekusProviders.API/appsettings.json
 ```
+
+**On Windows PowerShell:**
+```powershell
+Copy-Item Proyecto-Tekus/TekusProviders.API/appsettings.Example.json Proyecto-Tekus/TekusProviders.API/appsettings.json
+```
+
+Edit `Proyecto-Tekus/TekusProviders.API/appsettings.json` and configure:
+
+1. **Database Connection**: Update with your SQL Server credentials
+    - Replace `YOUR_PASSWORD_HERE` with `TekusTest2024!` (if using Docker)
+    - Or use your own SQL Server credentials
+
+2. **JWT Secret**: Change to a secure random string (minimum 32 characters)
+    - Replace the placeholder with your own secret key
+    - For testing, you can use any string with 32+ characters
+
+**🔒 Security Notes**:
+- `appsettings.json` is ignored by Git and should NEVER be committed
+- Never share your actual production passwords in documentation
+- Use different credentials for development and production
 
 ### 4. Create database and seed data
 
@@ -275,14 +354,14 @@ This project was developed as a technical test for Tekus S.A.S.
 
 ---
 
-## 🎯 Quick Evaluation Guide
+## 🎯 Evaluation Guide
 
-To quickly evaluate the project:
+To evaluate the project quickly:
 
 1. ✅ Run SQL scripts (01 and 02)
-2. ✅ Run backend: `dotnet run`
+2. ✅ Start backend: `dotnet run`
 3. ✅ Test endpoints in Swagger: `http://localhost:5130/swagger`
-4. ✅ Run frontend: `npm install && npm run dev`
+4. ✅ Start frontend: `npm install && npm run dev`
 5. ✅ Login with `admin / Tekus2024!`
 6. ✅ Create a provider and assign services
 7. ✅ View tests: `dotnet test`
