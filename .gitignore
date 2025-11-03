@@ -1,3 +1,7 @@
+###################
+# .NET / C#
+###################
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -11,33 +15,31 @@ x86/
 bld/
 [Bb]in/
 [Oo]bj/
+[Ll]og/
+[Ll]ogs/
 
-# Visual Studio cache/options
+# Visual Studio cache/options directory
 .vs/
 .vscode/
-*.rsuser
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
 
 # Rider
 .idea/
 *.sln.iml
 
 # User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
 *.userprefs
-
-# Build Results
-**/[Bb]in/
-**/[Oo]bj/
 
 # .NET Core
 project.lock.json
 project.fragment.lock.json
 artifacts/
 
-# Files built by VS/Rider
+# Files built by Visual Studio
 *_i.c
 *_p.c
 *_h.h
@@ -59,6 +61,7 @@ artifacts/
 *.tmp_proj
 *_wpftmp.csproj
 *.log
+*.tlog
 *.vspscc
 *.vssscc
 .builds
@@ -74,5 +77,137 @@ artifacts/
 *.nuget.props
 *.nuget.targets
 
-# Others
-appsettings.Development.json
+# Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+
+###################
+# SENSITIVE CONFIG FILES - NEVER COMMIT
+###################
+
+# Application settings with sensitive data
+**/appsettings.json
+**/appsettings.*.json
+# EXCEPT the example template
+!**/appsettings.Example.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database files
+*.mdf
+*.ldf
+*.ndf
+
+###################
+# Node / Frontend
+###################
+
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Production build
+/dist
+/build
+/.next
+/out
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Testing
+/coverage
+/.nyc_output
+
+# Misc
+.DS_Store
+*.pem
+*.local
+
+# Environment variables
+.env*.local
+
+# Vite
+.vite
+
+###################
+# Operating System
+###################
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+###################
+# IDEs and Editors
+###################
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+*.sw?
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+###################
+# Project Specific
+###################
+
+# Database backups
+*.bak
+*.backup
+
+# Local configuration backups
+*.json.backup
