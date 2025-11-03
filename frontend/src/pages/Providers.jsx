@@ -15,13 +15,13 @@ export default function Providers() {
     const [showAssignServiceModal, setShowAssignServiceModal] = useState(false);
     const [selectedProvider, setSelectedProvider] = useState(null);
 
-    // Pagination states
+    // Estados de paginación
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(9); // 9 para grid de 3x3
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
-    // Form states
+    // Estados del formulario
     const [formData, setFormData] = useState({ nit: '', name: '', email: '' });
     const [editData, setEditData] = useState({
         name: '',
@@ -243,10 +243,10 @@ export default function Providers() {
 
     const handlePageSizeChange = (size) => {
         setPageSize(Number(size));
-        setCurrentPage(1); // Reset a primera página al cambiar tamaño
+        setCurrentPage(1); // Reiniciar a la primera página al cambiar tamaño
     };
 
-    // Generar array de páginas para mostrar
+    // Generar arreglo de páginas para mostrar
     const getPageNumbers = () => {
         const pages = [];
         const maxPagesToShow = 5;

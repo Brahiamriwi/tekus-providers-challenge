@@ -11,19 +11,19 @@ export default function Services() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedService, setSelectedService] = useState(null);
 
-    // Pagination states
+    // Estados de paginación
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(9); // 9 para grid de 3x3
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
-    // Form state para crear
+    // Estado de formulario para crear
     const [formData, setFormData] = useState({
         name: '',
         hourlyRateUsd: '',
     });
 
-    // Form state para editar
+    // Estado de formulario para editar
     const [editData, setEditData] = useState({
         name: '',
         hourlyRateUsd: '',
@@ -151,10 +151,10 @@ export default function Services() {
 
     const handlePageSizeChange = (size) => {
         setPageSize(Number(size));
-        setCurrentPage(1); // Reset a primera página al cambiar tamaño
+        setCurrentPage(1); // Reiniciar a la primera página al cambiar tamaño
     };
 
-    // Generar array de páginas para mostrar
+    // Generar arreglo de páginas para mostrar
     const getPageNumbers = () => {
         const pages = [];
         const maxPagesToShow = 5;

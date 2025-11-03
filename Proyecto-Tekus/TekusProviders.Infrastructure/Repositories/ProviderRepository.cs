@@ -32,7 +32,7 @@ public class ProviderRepository : IProviderRepository
             .Include(p => p.ProviderServices)
             .ThenInclude(ps => ps.Service)
             .Include(p => p.ProviderServices)
-            .ThenInclude(ps => ps.ServiceCountries)  // ← AGREGAR ESTA LÍNEA
+            .ThenInclude(ps => ps.ServiceCountries)  
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))

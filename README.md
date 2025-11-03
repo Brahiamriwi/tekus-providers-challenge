@@ -1,38 +1,81 @@
 # Tekus Providers Challenge
 
+[![en](https://img.shields.io/badge/lang-en-red.svg)](README.md)
 [![es](https://img.shields.io/badge/lang-es-yellow.svg)](README.es.md)
 
 Provider and service management system developed with .NET 8 and DDD (Domain-Driven Design) architecture.
 
+## 📖 Project Description
+
+This project is a solution for centralized management of technical service providers for Tekus S.A.S. It allows managing provider information, offered services, rates, country coverage, and custom fields, facilitating decision-making and operational control.
+
+### Problem It Solves
+
+Tekus needed a system that would allow:
+- ✅ Centralize information from multiple providers
+- ✅ Register services with their rates in USD
+- ✅ Manage geographic coverage per service
+- ✅ Add custom fields according to specific needs
+- ✅ Obtain quick indicators for decision-making
+- ✅ Maintain traceability with date auditing
+
+### Implemented Features
+
+#### For the Administrator:
+- 🔐 **JWT Authentication** - Secure login with tokens
+- 👥 **Provider Management** - Complete CRUD with search and pagination
+- 🛠️ **Service Management** - Complete CRUD with search
+- 🏷️ **Custom Fields** - Add dynamic information to providers
+- 🌍 **Service Assignment** - Link services with providers and countries
+- 🔍 **Search and Filters** - Quickly locate information
+- 📄 **Pagination** - Efficient handling of large data volumes
+
+#### For Tekus (Business Value):
+- 📊 **Dashboard with KPIs** - Visualization of providers and services by country
+- 🌐 **External API Integration** - Automatically updated country data
+- 📝 **Auditing** - Recording of creation and update dates
+- 🎨 **Modern Interface** - React frontend with real-time notifications
+- 🔄 **RESTful API** - Documented with Swagger/OpenAPI
+- ✅ **Validations** - Prevention of duplicates and inconsistent data
+
 ## 🏗️ Architecture
 
-The project follows Domain-Driven Design and SOLID principles, organized in the following layers:
+The project follows Domain-Driven Design with layer separation:
 ```
 ├── Proyecto-Tekus/
 │   ├── TekusProviders.Domain/          # Entities and business logic
 │   ├── TekusProviders.Application/     # Use cases and DTOs
 │   ├── TekusProviders.Infrastructure/  # Data access and external services
 │   └── TekusProviders.API/             # Controllers and API configuration
+├── frontend/                            # React application with Tailwind CSS
 ├── tests/
 │   └── TekusProviders.Tests/           # Unit tests
-└── database/                            # SQL scripts
+└── database/                            # SQL scripts and ER diagram
 ```
 
 ## 🚀 Technologies
 
+### Backend
 - **.NET 8** - Main framework
 - **ASP.NET Core** - REST API
 - **Entity Framework Core** - ORM
 - **SQL Server 2022** - Database
 - **JWT Bearer** - Authentication
 - **Swagger/OpenAPI** - API documentation
-- **xUnit** - Unit testing
-- **Moq** - Mocking framework
-- **FluentAssertions** - Readable assertions
+- **xUnit + Moq + FluentAssertions** - Testing
+
+### Frontend
+- **React 18** - UI library
+- **Vite** - Build tool
+- **Tailwind CSS** - Styling
+- **React Router** - Navigation
+- **Axios** - HTTP client
+- **React Hot Toast** - Notifications
 
 ## 📋 Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Node.js 18+](https://nodejs.org/) and npm
 - [SQL Server 2022](https://www.microsoft.com/sql-server/sql-server-downloads) or Docker
 - [Git](https://git-scm.com/)
 
@@ -77,21 +120,31 @@ Execute the SQL scripts in order using your preferred tool (SSMS, Azure Data Stu
 1. `database/01_CreateDatabase.sql` - Creates database and tables
 2. `database/02_SeedData.sql` - Inserts test data
 
-### 5. Run the application
+You can view the ER diagram at: `database/DATABASE_DIAGRAM.md`
+
+### 5. Run the Backend
 ```bash
 dotnet run --project Proyecto-Tekus/TekusProviders.API/TekusProviders.API.csproj
 ```
 
 The API will be available at: `http://localhost:5130`
 
-### 6. Access Swagger
+Access Swagger at: `http://localhost:5130/swagger`
 
-Open your browser at: `http://localhost:5130/swagger`
+### 6. Run the Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend will be available at: `http://localhost:5173`
 
 ## 🔐 Authentication
 
 To use protected endpoints:
 
+### In Swagger:
 1. **Login**: `POST /api/Auth/login`
 ```json
    {
@@ -99,13 +152,16 @@ To use protected endpoints:
      "password": "Tekus2024!"
    }
 ```
+2. Copy the token from the response
+3. Click "Authorize" 🔒
+4. Enter: `Bearer YOUR_TOKEN_HERE`
 
-2. **Copy the token** from the response
-
-3. **Authorize in Swagger**:
-    - Click the "Authorize" button 🔒
-    - Enter: `Bearer YOUR_TOKEN_HERE`
-    - Click "Authorize"
+### In the Frontend:
+1. Open `http://localhost:5173`
+2. Enter credentials:
+    - Username: `admin`
+    - Password: `Tekus2024!`
+3. The token is automatically saved
 
 ## 🧪 Run Tests
 ```bash
@@ -129,16 +185,21 @@ dotnet test --filter ProviderTests
 - **ServiceCountries**: Countries where each service is offered
 - **CustomFields**: Dynamic custom fields for providers
 
+See complete diagram at: `database/DATABASE_DIAGRAM.md`
+
 ## 🔗 Main Endpoints
 
+### Authentication
+- `POST /api/Auth/login` - Login
+
 ### Providers
-- `GET /api/Providers` - List providers (with pagination and search)
+- `GET /api/Providers` - List providers (pagination and search)
 - `GET /api/Providers/{id}` - Get provider by ID
 - `POST /api/Providers` - Create provider
 - `PUT /api/Providers/{id}` - Update provider
 - `DELETE /api/Providers/{id}` - Delete provider
 - `POST /api/Providers/{id}/custom-fields` - Add custom field
-- `POST /api/Providers/{providerId}/services/{serviceId}` - Assign service
+- `POST /api/Providers/{providerId}/services/{serviceId}` - Assign service with countries
 
 ### Services
 - `GET /api/Services` - List services
@@ -148,7 +209,7 @@ dotnet test --filter ProviderTests
 - `DELETE /api/Services/{id}` - Delete service
 
 ### Countries
-- `GET /api/Countries` - List countries (from external API)
+- `GET /api/Countries` - List countries (external API)
 - `GET /api/Countries/{code}` - Get country by code
 
 ### Dashboard
@@ -157,11 +218,10 @@ dotnet test --filter ProviderTests
 ## 🛠️ Applied Principles
 
 ### SOLID
-- **Single Responsibility**: Each class has a single responsibility
-- **Open/Closed**: Entities open for extension, closed for modification
-- **Liskov Substitution**: Well-defined interfaces
-- **Interface Segregation**: Context-specific interfaces
-- **Dependency Inversion**: Dependency on abstractions, not implementations
+- ✅ **Single Responsibility (S)**: Each class has a single well-defined responsibility
+    - `ProviderService` handles only provider logic
+    - `CountryService` only manages countries
+    - Repositories focused on specific data access
 
 ### DDD (Domain-Driven Design)
 - **Aggregates**: Provider as aggregate root
@@ -174,13 +234,33 @@ dotnet test --filter ProviderTests
 - Dependencies pointing toward the domain
 - Framework independence in the domain
 
+## 🚧 Known Limitations and Future Improvements
+
+### Not Implemented (Future Improvements)
+- ❌ **Edit Custom Fields** - Endpoint `PUT /api/Providers/{id}/custom-fields/{fieldId}`
+- ❌ **Delete Custom Fields** - Endpoint `DELETE /api/Providers/{id}/custom-fields/{fieldId}`
+- ❌ **Edit Assigned Services** - Modify countries of an already assigned service
+- ❌ **Delete Assigned Services** - Endpoint `DELETE /api/Providers/{providerId}/services/{serviceId}`
+- ❌ **Frontend Pagination** - Previous/Next buttons to navigate between pages
+- ❌ **Deployment** - Configuration for Azure/AWS
+- ❌ **More SOLID Principles** - Implement O, L, I, D more explicitly
+- ❌ **Caching** - To improve performance on frequent queries
+- ❌ **Advanced Logging** - Integration with Serilog or Application Insights
+
+### Design Decisions
+- **NIT is not editable** as it's a unique tax identifier
+- **Custom Fields can be added but not edited/deleted** (MVP)
+- **Basic pagination** in backend, not implemented in UI
+- **Single user role** (Admin) for simplicity
+
 ## 📝 Technical Notes
 
 - SQL scripts use `GO` commands for batch execution (SQL Server standard)
-- External countries API is [REST Countries](https://restcountries.com/)
+- External countries API: [REST Countries](https://restcountries.com/)
 - All IDs are GUIDs for better distribution
-- Dates are stored in UTC
-- Pagination is used in all listings
+- Dates stored in UTC
+- Frontend developed after functional backend
+- Visual notifications to improve UX
 
 ## 👤 Author
 
@@ -192,3 +272,20 @@ dotnet test --filter ProviderTests
 ## 📄 License
 
 This project was developed as a technical test for Tekus S.A.S.
+
+---
+
+## 🎯 Quick Evaluation Guide
+
+To quickly evaluate the project:
+
+1. ✅ Run SQL scripts (01 and 02)
+2. ✅ Run backend: `dotnet run`
+3. ✅ Test endpoints in Swagger: `http://localhost:5130/swagger`
+4. ✅ Run frontend: `npm install && npm run dev`
+5. ✅ Login with `admin / Tekus2024!`
+6. ✅ Create a provider and assign services
+7. ✅ View tests: `dotnet test`
+8. ✅ Review code following DDD architecture
+
+**Estimated evaluation time: 20-30 minutes**
